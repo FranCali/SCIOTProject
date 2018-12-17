@@ -39,10 +39,8 @@ public class MainActivity extends AppCompatActivity {
                 sendHTTPRequest(1, true);
             }
         });
-
-        // new ConsumerTask().execute();
+        new ConsumerTask().execute();
     }
-
 
 
 
