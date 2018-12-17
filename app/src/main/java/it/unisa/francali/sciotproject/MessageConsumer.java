@@ -1,5 +1,7 @@
 package it.unisa.francali.sciotproject;
 
+import android.util.Log;
+
 import com.rabbitmq.client.*;
 
 public class MessageConsumer {
@@ -7,7 +9,10 @@ public class MessageConsumer {
 
     public static void consume()throws Exception{
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("172.19.28.197");
+        factory.setHost("192.168.1.115");
+        factory.setPort(5672);
+        factory.setUsername("guest");
+        factory.setPassword("guest");
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
@@ -15,11 +20,11 @@ public class MessageConsumer {
         String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, EXCHANGE_NAME, "");
 
-        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+        Log.d("Connection established", " [*] Waiting for messages. To exit press CTRL+C");
 
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received '" + message + "'");
+            Log.d("Success", " [x] Received '" + message + "'");
         };
         channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
     }

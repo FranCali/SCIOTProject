@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
                 sendHTTPRequest(1, true);
             }
         });
+
         new ConsumerTask().execute();
     }
 
@@ -58,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         RequestQueue queue = Volley.newRequestQueue(this);
-        String protocol = "http", host = "172.19.28.197", port = "37827";
+        String protocol = "http", host = "192.168.1.115", port = "37827";
 
         final String url = protocol+ "://" + host + ":" + port;
 
