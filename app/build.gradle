@@ -29,8 +29,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    implementation files('libs/amqp-client-5.5.1.jar')
     implementation files('libs/logback-classic-1.2.3.jar')
     implementation files('libs/slf4j.jar')
     implementation files('libs/logback-core-1.2.3.jar')
+    implementation 'com.rabbitmq:amqp-client:5.5.1'
 }
