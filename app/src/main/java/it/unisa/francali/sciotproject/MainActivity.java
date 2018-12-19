@@ -8,9 +8,12 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -25,11 +28,14 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
-    TextView sentMsg, receivedMsg;
+    TextView sentMsg, receivedMsg, seatTxt;
     Button seatBtn, leaveBtn;
     RadioGroup roomsGroup;
     Handler incomingMessageHandler;
     final int SEATS_LIMIT = 20;
+    final String HOST = "172.19.21.127", PORT_NUMBER = "42651";
+    boolean hasSeat = false;
+    int currentSeat = 0;
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -38,13 +44,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         sentMsg = findViewById(R.id.sentMsg);
         receivedMsg = findViewById(R.id.receivedMsg);
-        seatBtn = findViewById(R.id.seat);
+        seatBtn = findViewById(R.id.sit);
         leaveBtn = findViewById(R.id.leave);
         roomsGroup = findViewById(R.id.radioRooms);
+        seatTxt = findViewById(R.id.seat);
 
-        seatBtn.setOnClickListener((view) -> bookSeat(true));
-        leaveBtn.setOnClickListener((view) -> bookSeat(false));
-
+        seatBtn.setOnClickListener((view) -> sitOrLeave(true));
+        leaveBtn.setOnClickListener((view) -> sitOrLeave(false));
 
         incomingMessageHandler = new Handler() {
             @Override
@@ -68,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
 
         switch(roomNumber){
             case 1: room = findViewById(R.id.seatsRoom1);
-
                 break;
             case 2: room = findViewById(R.id.seatsRoom2);
                 break;
@@ -87,9 +92,41 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void bookSeat(boolean sit) {
+    private void sitOrLeave(boolean sit) {
         int roomNumber = checkRoom();
-        callNuclioPublisher(sit, roomNumber);
+
+        if(sit && hasSeat &&  roomNumber == currentSeat){
+            Toast t = Toast.makeText(this, "you are already in this place! ", Toast.LENGTH_SHORT);
+            t.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL, 0, 100);
+            t.show();
+            return;
+        }
+        //If a person already has a seat and sits in another room
+        else if (sit && hasSeat) {
+            Toast t = Toast.makeText(this, "you must first leave your seat! ", Toast.LENGTH_SHORT);
+            t.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL, 0, 100);
+            t.show();
+            return;
+        }
+        //If a person wants to sit and has not a seat
+        else if (sit && !hasSeat) {
+            callNuclioPublisher(sit, roomNumber);
+            seatTxt.setText(String.valueOf(roomNumber));
+            currentSeat = roomNumber;
+            hasSeat = true;
+        }
+        //If a person leaves and has a seat
+        else if (!sit && hasSeat){
+            callNuclioPublisher(sit, currentSeat);
+            seatTxt.setText("No seat");
+            currentSeat = 0;
+            hasSeat = false;
+        }
+        else if(!sit && !hasSeat){
+            Toast.makeText(this, "you are not sit!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
     }
 
     private void callNuclioPublisher(boolean sit, int roomNumber) {
@@ -106,10 +143,10 @@ public class MainActivity extends AppCompatActivity {
 
 
         RequestQueue queue = Volley.newRequestQueue(this);
-        String protocol = "http", host = "172.19.30.183", port = "37827";
+        String protocol = "http", host = HOST, port = PORT_NUMBER;
 
         final String url = protocol + "://" + host + ":" + port;
-
+        Log.d("Request to", url);
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
                 (response) -> sentMsg.setText(response),
@@ -137,7 +174,6 @@ public class MainActivity extends AppCompatActivity {
         int roomId = roomsGroup.getCheckedRadioButtonId();
         int roomNumber = 1;
 
-
         switch (roomId) {
             case R.id.room1:
                 roomNumber = 1;
@@ -161,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
         protected Object doInBackground(Object[] objects) {
             try {
                 ConnectionFactory factory = new ConnectionFactory();
-                factory.setHost("172.19.30.183");
+                factory.setHost(HOST);
                 factory.setPort(5672);
                 factory.setUsername("guest");
                 factory.setPassword("guest");
