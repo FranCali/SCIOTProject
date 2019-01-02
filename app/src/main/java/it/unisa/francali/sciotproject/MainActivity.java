@@ -28,128 +28,120 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
-    TextView sentMsg, receivedMsg, seatTxt;
-    Button seatBtn, leaveBtn;
-    RadioGroup roomsGroup;
-    Handler incomingMessageHandler;
     final int SEATS_LIMIT = 20;
-    final String HOST = "172.19.21.127", PORT_NUMBER = "42651";
-    boolean hasSeat = false;
-    int currentSeat = 0;
+    final String HOST = "192.168.1.7", PORT_NUMBER = "42651";
+
+    private TextView sentMsgTextView, receivedMsgTextView, currentSeatTextView;
+    private Button seatBtn, leaveBtn;
+    private RadioGroup roomsRadioGroup;
+    private Handler incomingMessageHandler;
+    private boolean hasSeat = false;
+    private int currentRoom = 0;
 
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        sentMsg = findViewById(R.id.sentMsg);
-        receivedMsg = findViewById(R.id.receivedMsg);
-        seatBtn = findViewById(R.id.sit);
-        leaveBtn = findViewById(R.id.leave);
-        roomsGroup = findViewById(R.id.radioRooms);
-        seatTxt = findViewById(R.id.seat);
+        initializeLayoutElements();
 
-        seatBtn.setOnClickListener((view) -> sitOrLeave(true));
-        leaveBtn.setOnClickListener((view) -> sitOrLeave(false));
+        seatBtn.setOnClickListener((view) -> takeSeat());
+        leaveBtn.setOnClickListener((view) -> leaveSeat());
 
         incomingMessageHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
-                receivedMsg.setText(msg.getData().get("msg").toString());
-                changeSeats(msg.getData().get("msg").toString());
+                String receivedMsg = msg.getData().get("msg").toString();
+                receivedMsgTextView.setText(receivedMsg);
+                updateSeats(receivedMsg);
             }
         };
-
-        new ConsumeTask().execute();
+        new ReceiveMsgTask().execute();
     }
 
-    private void changeSeats(String message){
-        int roomNumber = Integer.valueOf(message.split("-")[0]);
-        boolean isSit = Boolean.valueOf(message.split("-")[1]);
+    private void initializeLayoutElements(){
+        sentMsgTextView = findViewById(R.id.sentMsgTextView);
+        receivedMsgTextView = findViewById(R.id.receivedMsgTextView);
+        seatBtn = findViewById(R.id.sit);
+        leaveBtn = findViewById(R.id.leave);
+        roomsRadioGroup = findViewById(R.id.roomsRadioGroup);
+        currentSeatTextView = findViewById(R.id.currentSeatTextView);
+    }
 
-        TextView room = findViewById(R.id.seatsRoom1);
-
+    private void updateSeats(String message){
+        int checkedRoomNumber = Integer.valueOf(message.split("-")[0]);
+        boolean isSitting = Boolean.valueOf(message.split("-")[1]);
         int freeSeats;
 
+        TextView roomTextView = null;
 
-        switch(roomNumber){
-            case 1: room = findViewById(R.id.seatsRoom1);
+        switch(checkedRoomNumber){
+            case 1: roomTextView = findViewById(R.id.freeSeatsRoom1TextView);
                 break;
-            case 2: room = findViewById(R.id.seatsRoom2);
+            case 2: roomTextView = findViewById(R.id.freeSeatsRoom2TextView);
                 break;
-            case 3: room = findViewById(R.id.seatsRoom3);
+            case 3: roomTextView = findViewById(R.id.freeSeatsRoom3TextView);
                 break;
         }
 
-        freeSeats = Integer.valueOf(room.getText().toString());
-        if(freeSeats > 0  && isSit) {
+        freeSeats = Integer.valueOf(roomTextView.getText().toString());
+        if(freeSeats > 0  && isSitting)
             freeSeats--;
-            room.setText(String.valueOf(freeSeats));
-        }
-        else if(freeSeats < SEATS_LIMIT  && !isSit) {
+        else if(freeSeats < SEATS_LIMIT  && !isSitting)
             freeSeats++;
-            room.setText(String.valueOf(freeSeats));
-        }
+
+        roomTextView.setText(String.valueOf(freeSeats));
     }
 
-    private void sitOrLeave(boolean sit) {
-        int roomNumber = checkRoom();
+    private void takeSeat(){
+        int checkedRoom = getCheckedRoom();
 
-        if(sit && hasSeat &&  roomNumber == currentSeat){
-            Toast t = Toast.makeText(this, "you are already in this place! ", Toast.LENGTH_SHORT);
-            t.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL, 0, 100);
-            t.show();
-            return;
-        }
-        //If a person already has a seat and sits in another room
-        else if (sit && hasSeat) {
+        if (hasSeat) {
             Toast t = Toast.makeText(this, "you must first leave your seat! ", Toast.LENGTH_SHORT);
             t.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL, 0, 100);
             t.show();
-            return;
         }
-        //If a person wants to sit and has not a seat
-        else if (sit && !hasSeat) {
-            callNuclioPublisher(sit, roomNumber);
-            seatTxt.setText(String.valueOf(roomNumber));
-            currentSeat = roomNumber;
+        else{
+            sendChangedSeatMsg(true, checkedRoom);
+            currentSeatTextView.setText(String.valueOf(checkedRoom));
+            currentRoom = checkedRoom;
             hasSeat = true;
         }
-        //If a person leaves and has a seat
-        else if (!sit && hasSeat){
-            callNuclioPublisher(sit, currentSeat);
-            seatTxt.setText("No seat");
-            currentSeat = 0;
-            hasSeat = false;
-        }
-        else if(!sit && !hasSeat){
-            Toast.makeText(this, "you are not sit!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
     }
 
-    private void callNuclioPublisher(boolean sit, int roomNumber) {
+    private void leaveSeat(){
+        if(hasSeat){
+            sendChangedSeatMsg(false, currentRoom);
+            currentSeatTextView.setText("no seat");
+            currentRoom = 0;
+            hasSeat = false;
+        }
+        else{
+            Toast.makeText(this, "you are not sit!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void sendChangedSeatMsg(boolean isSitting, int checkedRoom) {
 
         JSONObject requestBody = new JSONObject();
         try {
-            requestBody.put("roomnumber", roomNumber);
-            requestBody.put("issit", sit);
+            requestBody.put("roomNumber", checkedRoom);
+            requestBody.put("isSitting", isSitting);
         } catch (JSONException exception) {
             Log.e("JsonError", exception.getMessage());
         }
 
         final String requestBodyString = requestBody.toString();
 
-
         RequestQueue queue = Volley.newRequestQueue(this);
-        String protocol = "http", host = HOST, port = PORT_NUMBER;
+        String protocol = "http";
 
-        final String url = protocol + "://" + host + ":" + port;
+        final String url = protocol + "://" + HOST + ":" + PORT_NUMBER;
+
         Log.d("Request to", url);
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
-                (response) -> sentMsg.setText(response),
+                (response) -> sentMsgTextView.setText(response),
                 (error) -> Log.e("VolleyError", error.toString())) {
             @Override
             public String getBodyContentType() {
@@ -170,28 +162,26 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
-    private int checkRoom() {
-        int roomId = roomsGroup.getCheckedRadioButtonId();
-        int roomNumber = 1;
+    private int getCheckedRoom() {
+        int roomId = roomsRadioGroup.getCheckedRadioButtonId();
+        int checkedRoom = -1;
 
         switch (roomId) {
-            case R.id.room1:
-                roomNumber = 1;
+            case R.id.room1RadioBtn:
+                checkedRoom = 1;
                 break;
-            case R.id.room2:
-                roomNumber = 2;
+            case R.id.room2RadioBtn:
+                checkedRoom = 2;
                 break;
-            case R.id.room3:
-                roomNumber = 3;
+            case R.id.room3RadioBtn:
+                checkedRoom = 3;
                 break;
         }
 
-        return roomNumber;
+        return checkedRoom;
     }
 
-
-
-    private class ConsumeTask extends AsyncTask {
+    private class ReceiveMsgTask extends AsyncTask {
 
         @Override
         protected Object doInBackground(Object[] objects) {
@@ -219,8 +209,8 @@ public class MainActivity extends AppCompatActivity {
                     msg.setData(bundle);
                     incomingMessageHandler.sendMessage(msg);
                 };
-                channel.basicConsume(queueName, true, deliverCallback, consumerTag -> {
-                });
+
+                channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
             }catch (Exception e){
                 e.printStackTrace();
             }
