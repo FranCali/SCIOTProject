@@ -2,6 +2,7 @@ package it.unisa.francali.sciotproject;
 
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -29,14 +30,14 @@ import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
     final int SEATS_LIMIT = 20;
-    final String HOST = "192.168.1.7", PORT_NUMBER = "42651";
+    final String NUCLIO_HOST = "192.168.1.7", NUCLIO_PORT_NUMBER = "42651";
 
     private TextView sentMsgTextView, receivedMsgTextView, currentSeatTextView;
-    private Button seatBtn, leaveBtn;
+    private Button seatBtn, leaveBtn, chatBtn;
     private RadioGroup roomsRadioGroup;
     private Handler incomingMessageHandler;
     private boolean hasSeat = false;
-    private int currentRoom = 0;
+    private int currentRoomNumber = 0;
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -47,6 +48,10 @@ public class MainActivity extends AppCompatActivity {
 
         seatBtn.setOnClickListener((view) -> takeSeat());
         leaveBtn.setOnClickListener((view) -> leaveSeat());
+        chatBtn.setOnClickListener((view) -> {
+            Intent intentToChat = new Intent(getBaseContext(), ChatActivity.class);
+            startActivity(intentToChat);
+        });
 
         incomingMessageHandler = new Handler() {
             @Override
@@ -64,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         receivedMsgTextView = findViewById(R.id.receivedMsgTextView);
         seatBtn = findViewById(R.id.sit);
         leaveBtn = findViewById(R.id.leave);
+        chatBtn = findViewById(R.id.chatBtn);
         roomsRadioGroup = findViewById(R.id.roomsRadioGroup);
         currentSeatTextView = findViewById(R.id.currentSeatTextView);
     }
@@ -104,16 +110,16 @@ public class MainActivity extends AppCompatActivity {
         else{
             sendChangedSeatMsg(true, checkedRoom);
             currentSeatTextView.setText(String.valueOf(checkedRoom));
-            currentRoom = checkedRoom;
+            currentRoomNumber = checkedRoom;
             hasSeat = true;
         }
     }
 
     private void leaveSeat(){
         if(hasSeat){
-            sendChangedSeatMsg(false, currentRoom);
+            sendChangedSeatMsg(false, currentRoomNumber);
             currentSeatTextView.setText("no seat");
-            currentRoom = 0;
+            currentRoomNumber = 0;
             hasSeat = false;
         }
         else{
@@ -121,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sendChangedSeatMsg(boolean isSitting, int checkedRoom) {
+    private void sendChangedSeatMsg(boolean isSitting, int checkedRoom) { //Calling Nuclio function for publishing message
 
         JSONObject requestBody = new JSONObject();
         try {
@@ -136,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
         RequestQueue queue = Volley.newRequestQueue(this);
         String protocol = "http";
 
-        final String url = protocol + "://" + HOST + ":" + PORT_NUMBER;
+        final String url = protocol + "://" + NUCLIO_HOST + ":" + NUCLIO_PORT_NUMBER;
 
         Log.d("Request to", url);
 
@@ -187,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
         protected Object doInBackground(Object[] objects) {
             try {
                 ConnectionFactory factory = new ConnectionFactory();
-                factory.setHost(HOST);
+                factory.setHost(NUCLIO_HOST);
                 factory.setPort(5672);
                 factory.setUsername("guest");
                 factory.setPassword("guest");

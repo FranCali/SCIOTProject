@@ -229,4 +229,12 @@
             tools:layout_editor_absoluteY="163dp" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/chatBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CHAT"
+        tools:layout_editor_absoluteX="298dp"
+        tools:layout_editor_absoluteY="453dp" />
+
 </android.support.constraint.ConstraintLayout>
