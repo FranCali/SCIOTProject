@@ -3,6 +3,9 @@ package it.unisa.francali.sciotproject;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -26,6 +29,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
@@ -192,6 +196,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Object doInBackground(Object[] objects) {
             try {
+
+                SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("settings", Context.MODE_PRIVATE);
                 ConnectionFactory factory = new ConnectionFactory();
                 factory.setHost(NUCLIO_HOST);
                 factory.setPort(5672);
@@ -199,9 +205,17 @@ public class MainActivity extends AppCompatActivity {
                 factory.setPassword("guest");
                 Connection connection = factory.newConnection();
                 Channel channel = connection.createChannel();
-
                 channel.exchangeDeclare("iot/rooms", "fanout");
-                String queueName = channel.queueDeclare().getQueue();
+
+                String queueName = sharedPref.getString("queueName", "");
+
+                if (!queueName.equals("")) {
+                    queueName = channel.queueDeclare().getQueue();
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString("queueName", queueName);
+                    editor.commit();
+                }
+
                 channel.queueBind(queueName, "iot/rooms", "");
 
                 Log.d("debug"," [*] Waiting for messages. To exit press CTRL+C");
