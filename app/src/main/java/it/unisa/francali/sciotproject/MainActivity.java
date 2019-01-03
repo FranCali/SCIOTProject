@@ -196,7 +196,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Object doInBackground(Object[] objects) {
             try {
-
                 SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("settings", Context.MODE_PRIVATE);
                 ConnectionFactory factory = new ConnectionFactory();
                 factory.setHost(NUCLIO_HOST);
@@ -209,8 +208,8 @@ public class MainActivity extends AppCompatActivity {
 
                 String queueName = sharedPref.getString("queueName", "");
 
-                if (!queueName.equals("")) {
-                    queueName = channel.queueDeclare().getQueue();
+                if (queueName.equals("")) {
+                    queueName = channel.queueDeclare("", true, false, false, null).getQueue();
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("queueName", queueName);
                     editor.commit();
