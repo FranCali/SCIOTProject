@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         receivedMsgTextView = findViewById(R.id.receivedMsgTextView);
         seatBtn = findViewById(R.id.sit);
         leaveBtn = findViewById(R.id.leave);
+        chatBtn = findViewById(R.id.chatBtn);
         roomsRadioGroup = findViewById(R.id.roomsRadioGroup);
         currentSeatTextView = findViewById(R.id.currentSeatTextView);
         freeSeatsRoom1TextView = findViewById(R.id.freeSeatsRoom1TextView);

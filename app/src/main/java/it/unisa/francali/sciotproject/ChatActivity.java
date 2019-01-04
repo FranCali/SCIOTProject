@@ -66,21 +66,12 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed(){
-        super.onBackPressed();
+    public void onStop(){
+        super.onStop();
         sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("chatHistory", conversationTextView.getText().toString());
         editor.commit();
-    }
-
-    @Override
-    public void onDestroy(){
-        sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString("chatHistory", conversationTextView.getText().toString());
-        editor.commit();
-        super.onDestroy();
     }
 
     void initializeLayoutElements(){
