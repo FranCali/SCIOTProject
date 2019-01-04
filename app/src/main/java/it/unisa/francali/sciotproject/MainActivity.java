@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     final String HOST = "192.168.1.7", PORT_NUMBER = "42651";
 
     private TextView sentMsgTextView, receivedMsgTextView, currentSeatTextView;
-    private Button seatBtn, leaveBtn;
+    private Button seatBtn, leaveBtn, chatBtn;
     private RadioGroup roomsRadioGroup;
     private Handler incomingMessageHandler;
     private boolean hasSeat = false;
@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
         receivedMsgTextView = findViewById(R.id.receivedMsgTextView);
         seatBtn = findViewById(R.id.sit);
         leaveBtn = findViewById(R.id.leave);
+        chatBtn = findViewById(R.id.chatBtn);
         roomsRadioGroup = findViewById(R.id.roomsRadioGroup);
         currentSeatTextView = findViewById(R.id.currentSeatTextView);
     }
