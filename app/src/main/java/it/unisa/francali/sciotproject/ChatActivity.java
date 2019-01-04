@@ -9,7 +9,6 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -35,6 +34,7 @@ public class ChatActivity extends AppCompatActivity {
     private EditText text;
     private TextView conversationTextView;
     private Handler incomingMessageHandler;
+    private SharedPreferences sharedPref;
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -49,7 +49,7 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void handleMessage(Message msg) {
                 String receivedMsg = msg.getData().get("msg").toString();
-                Log.d("received messageR", receivedMsg);
+                Log.d("received message", receivedMsg);
                 Date now = new Date();
                 SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss", Locale.ITALIAN);
                 conversationTextView.append(ft.format(now) + ' ' + receivedMsg + '\n');
@@ -59,21 +59,28 @@ public class ChatActivity extends AppCompatActivity {
         new ReceiveMsgTask().execute();
     }
 
-
     private void recoverChatHistory(){
-        SharedPreferences sharedPref = getSharedPreferences("state", Context.MODE_PRIVATE);
+        sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
         String chatHistory = sharedPref.getString("chatHistory", "");
         conversationTextView.setText(chatHistory);
     }
 
     @Override
-    public void onStop(){
-        super.onStop();
-        SharedPreferences sharedPref = getSharedPreferences("state", Context.MODE_PRIVATE);
+    public void onBackPressed(){
+        super.onBackPressed();
+        sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("chatHistory", conversationTextView.getText().toString());
-        Log.d("messaggio", conversationTextView.getText().toString());
         editor.commit();
+    }
+
+    @Override
+    public void onDestroy(){
+        sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString("chatHistory", conversationTextView.getText().toString());
+        editor.commit();
+        super.onDestroy();
     }
 
     void initializeLayoutElements(){
@@ -85,8 +92,7 @@ public class ChatActivity extends AppCompatActivity {
     void setupPublishBtn(){
         publishBtn.setOnClickListener((view) -> {
             String message = text.getText().toString();
-            InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            mgr.hideSoftInputFromWindow(text.getWindowToken(), 0);
+
             if (!text.getText().toString().isEmpty()) {
                 publishMsg(message);
                 text.setText("");
@@ -138,7 +144,7 @@ public class ChatActivity extends AppCompatActivity {
         @Override
         protected Object doInBackground(Object[] objects) {
             try {
-                SharedPreferences sharedPref = getSharedPreferences("state", Context.MODE_PRIVATE);
+                sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
                 ConnectionFactory factory = new ConnectionFactory();
                 factory.setHost(NUCLIO_HOST);
                 factory.setPort(5672);
