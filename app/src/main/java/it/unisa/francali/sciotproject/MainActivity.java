@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     final int SEATS_LIMIT = 20;
     final String NUCLIO_HOST = "192.168.1.7", NUCLIO_PORT_NUMBER = "42651";
 
-    private TextView sentMsgTextView, receivedMsgTextView, currentSeatTextView;
+    private TextView sentMsgTextView, receivedMsgTextView, currentSeatTextView, freeSeatsRoom1TextView, freeSeatsRoom2TextView, freeSeatsRoom3TextView;
     private Button seatBtn, leaveBtn, chatBtn;
     private RadioGroup roomsRadioGroup;
     private Handler incomingMessageHandler;
@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initializeLayoutElements();
+        recoverState();
 
         seatBtn.setOnClickListener((view) -> takeSeat());
         leaveBtn.setOnClickListener((view) -> leaveSeat());
@@ -68,14 +69,50 @@ public class MainActivity extends AppCompatActivity {
         new ReceiveMsgTask().execute();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString("currentRoom",((TextView) findViewById(R.id.currentSeatTextView)).getText().toString());
+        editor.putString("seatsRoom1",((TextView) findViewById(R.id.freeSeatsRoom1TextView)).getText().toString());
+        editor.putString("seatsRoom2",((TextView) findViewById(R.id.freeSeatsRoom2TextView)).getText().toString());
+        editor.putString("seatsRoom3",((TextView) findViewById(R.id.freeSeatsRoom3TextView)).getText().toString());
+        editor.commit();
+    }
+
     private void initializeLayoutElements(){
         sentMsgTextView = findViewById(R.id.sentMsgTextView);
         receivedMsgTextView = findViewById(R.id.receivedMsgTextView);
         seatBtn = findViewById(R.id.sit);
         leaveBtn = findViewById(R.id.leave);
-        chatBtn = findViewById(R.id.chatBtn);
         roomsRadioGroup = findViewById(R.id.roomsRadioGroup);
         currentSeatTextView = findViewById(R.id.currentSeatTextView);
+        freeSeatsRoom1TextView = findViewById(R.id.freeSeatsRoom1TextView);
+        freeSeatsRoom2TextView = findViewById(R.id.freeSeatsRoom2TextView);
+        freeSeatsRoom3TextView = findViewById(R.id.freeSeatsRoom3TextView);
+    }
+
+    private void recoverState(){
+
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
+
+        switch (sharedPref.getString("currentRoom","No seat")) {
+            case "No seat": currentRoomNumber = 0;
+                break;
+            case "1": currentRoomNumber = 1; hasSeat = true;
+                break;
+            case "2": currentRoomNumber = 2; hasSeat = true;
+                break;
+            case "3": currentRoomNumber = 3; hasSeat = true;
+                break;
+        }
+
+        currentSeatTextView.setText(sharedPref.getString("currentRoom","No seat"));
+        freeSeatsRoom1TextView.setText(sharedPref.getString("seatsRoom1","20"));
+        freeSeatsRoom2TextView.setText(sharedPref.getString("seatsRoom2","20"));
+        freeSeatsRoom3TextView.setText(sharedPref.getString("seatsRoom3","20"));
     }
 
     private void updateSeats(String message){
@@ -209,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
                 String queueName = sharedPref.getString("queueName", "");
 
                 if (queueName.equals("")) {
-                    queueName = channel.queueDeclare("", true, false, false, null).getQueue();
+                    queueName = channel.queueDeclare(queueName,true,false,false,null).getQueue();
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("queueName", queueName);
                     editor.commit();
