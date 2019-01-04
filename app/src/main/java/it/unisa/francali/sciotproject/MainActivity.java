@@ -2,6 +2,10 @@ package it.unisa.francali.sciotproject;
 
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -25,18 +29,19 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
     final int SEATS_LIMIT = 20;
-    final String HOST = "192.168.1.7", PORT_NUMBER = "42651";
+    final String NUCLIO_HOST = "192.168.1.7", NUCLIO_PORT_NUMBER = "42651";
 
-    private TextView sentMsgTextView, receivedMsgTextView, currentSeatTextView;
-    private Button seatBtn, leaveBtn;
+    private TextView sentMsgTextView, receivedMsgTextView, currentSeatTextView, freeSeatsRoom1TextView, freeSeatsRoom2TextView, freeSeatsRoom3TextView;
+    private Button seatBtn, leaveBtn, chatBtn;
     private RadioGroup roomsRadioGroup;
     private Handler incomingMessageHandler;
     private boolean hasSeat = false;
-    private int currentRoom = 0;
+    private int currentRoomNumber = 0;
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -44,9 +49,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initializeLayoutElements();
+        recoverState();
 
         seatBtn.setOnClickListener((view) -> takeSeat());
         leaveBtn.setOnClickListener((view) -> leaveSeat());
+        chatBtn.setOnClickListener((view) -> {
+            Intent intentToChat = new Intent(getBaseContext(), ChatActivity.class);
+            startActivity(intentToChat);
+        });
 
         incomingMessageHandler = new Handler() {
             @Override
@@ -59,6 +69,19 @@ public class MainActivity extends AppCompatActivity {
         new ReceiveMsgTask().execute();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString("currentRoom",((TextView) findViewById(R.id.currentSeatTextView)).getText().toString());
+        editor.putString("seatsRoom1",((TextView) findViewById(R.id.freeSeatsRoom1TextView)).getText().toString());
+        editor.putString("seatsRoom2",((TextView) findViewById(R.id.freeSeatsRoom2TextView)).getText().toString());
+        editor.putString("seatsRoom3",((TextView) findViewById(R.id.freeSeatsRoom3TextView)).getText().toString());
+        editor.commit();
+    }
+
     private void initializeLayoutElements(){
         sentMsgTextView = findViewById(R.id.sentMsgTextView);
         receivedMsgTextView = findViewById(R.id.receivedMsgTextView);
@@ -66,6 +89,30 @@ public class MainActivity extends AppCompatActivity {
         leaveBtn = findViewById(R.id.leave);
         roomsRadioGroup = findViewById(R.id.roomsRadioGroup);
         currentSeatTextView = findViewById(R.id.currentSeatTextView);
+        freeSeatsRoom1TextView = findViewById(R.id.freeSeatsRoom1TextView);
+        freeSeatsRoom2TextView = findViewById(R.id.freeSeatsRoom2TextView);
+        freeSeatsRoom3TextView = findViewById(R.id.freeSeatsRoom3TextView);
+    }
+
+    private void recoverState(){
+
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
+
+        switch (sharedPref.getString("currentRoom","No seat")) {
+            case "No seat": currentRoomNumber = 0;
+                break;
+            case "1": currentRoomNumber = 1; hasSeat = true;
+                break;
+            case "2": currentRoomNumber = 2; hasSeat = true;
+                break;
+            case "3": currentRoomNumber = 3; hasSeat = true;
+                break;
+        }
+
+        currentSeatTextView.setText(sharedPref.getString("currentRoom","No seat"));
+        freeSeatsRoom1TextView.setText(sharedPref.getString("seatsRoom1","20"));
+        freeSeatsRoom2TextView.setText(sharedPref.getString("seatsRoom2","20"));
+        freeSeatsRoom3TextView.setText(sharedPref.getString("seatsRoom3","20"));
     }
 
     private void updateSeats(String message){
@@ -104,16 +151,16 @@ public class MainActivity extends AppCompatActivity {
         else{
             sendChangedSeatMsg(true, checkedRoom);
             currentSeatTextView.setText(String.valueOf(checkedRoom));
-            currentRoom = checkedRoom;
+            currentRoomNumber = checkedRoom;
             hasSeat = true;
         }
     }
 
     private void leaveSeat(){
         if(hasSeat){
-            sendChangedSeatMsg(false, currentRoom);
+            sendChangedSeatMsg(false, currentRoomNumber);
             currentSeatTextView.setText("no seat");
-            currentRoom = 0;
+            currentRoomNumber = 0;
             hasSeat = false;
         }
         else{
@@ -121,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sendChangedSeatMsg(boolean isSitting, int checkedRoom) {
+    private void sendChangedSeatMsg(boolean isSitting, int checkedRoom) { //Calling Nuclio function for publishing message
 
         JSONObject requestBody = new JSONObject();
         try {
@@ -136,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
         RequestQueue queue = Volley.newRequestQueue(this);
         String protocol = "http";
 
-        final String url = protocol + "://" + HOST + ":" + PORT_NUMBER;
+        final String url = protocol + "://" + NUCLIO_HOST + ":" + NUCLIO_PORT_NUMBER;
 
         Log.d("Request to", url);
 
@@ -186,16 +233,25 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Object doInBackground(Object[] objects) {
             try {
+                SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("settings", Context.MODE_PRIVATE);
                 ConnectionFactory factory = new ConnectionFactory();
-                factory.setHost(HOST);
+                factory.setHost(NUCLIO_HOST);
                 factory.setPort(5672);
                 factory.setUsername("guest");
                 factory.setPassword("guest");
                 Connection connection = factory.newConnection();
                 Channel channel = connection.createChannel();
-
                 channel.exchangeDeclare("iot/rooms", "fanout");
-                String queueName = channel.queueDeclare().getQueue();
+
+                String queueName = sharedPref.getString("queueName", "");
+
+                if (queueName.equals("")) {
+                    queueName = channel.queueDeclare(queueName,true,false,false,null).getQueue();
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString("queueName", queueName);
+                    editor.commit();
+                }
+
                 channel.queueBind(queueName, "iot/rooms", "");
 
                 Log.d("debug"," [*] Waiting for messages. To exit press CTRL+C");
