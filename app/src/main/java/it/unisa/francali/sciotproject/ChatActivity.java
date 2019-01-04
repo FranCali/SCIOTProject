@@ -23,6 +23,8 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -35,7 +37,7 @@ public class ChatActivity extends AppCompatActivity {
     private TextView conversationTextView;
     private Handler incomingMessageHandler;
     private SharedPreferences sharedPref;
-
+    Channel channel;
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +74,23 @@ public class ChatActivity extends AppCompatActivity {
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("chatHistory", conversationTextView.getText().toString());
         editor.commit();
+
+
+        new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] objects) {
+                try {
+                    channel.abort();
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
+                return new Object();
+            }
+        }.execute();
     }
+
+
+
 
     void initializeLayoutElements(){
         publishBtn = findViewById(R.id.publishBtn);
@@ -142,7 +160,7 @@ public class ChatActivity extends AppCompatActivity {
                 factory.setUsername("guest");
                 factory.setPassword("guest");
                 Connection connection = factory.newConnection();
-                Channel channel = connection.createChannel();
+                channel = connection.createChannel();
                 channel.exchangeDeclare("iot/chat", "fanout");
 
                 String queueName = sharedPref.getString("queueChatName", "");
