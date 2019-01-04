@@ -70,9 +70,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
+    protected void onStop() {
+        super.onStop();
         SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("currentRoom",((TextView) findViewById(R.id.currentSeatTextView)).getText().toString());
