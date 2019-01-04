@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         editor.putString("seatsRoom1",((TextView) findViewById(R.id.freeSeatsRoom1TextView)).getText().toString());
         editor.putString("seatsRoom2",((TextView) findViewById(R.id.freeSeatsRoom2TextView)).getText().toString());
         editor.putString("seatsRoom3",((TextView) findViewById(R.id.freeSeatsRoom3TextView)).getText().toString());
-        editor.commit();
+        editor.apply();
     }
 
     private void initializeLayoutElements(){
@@ -228,10 +228,11 @@ public class MainActivity extends AppCompatActivity {
         return checkedRoom;
     }
 
-    private class ReceiveMsgTask extends AsyncTask {
+    @SuppressLint("StaticFieldLeak")
+    private class ReceiveMsgTask extends AsyncTask<Object, Void, String> {
 
         @Override
-        protected Object doInBackground(Object[] objects) {
+        protected String doInBackground(Object[] objects) {
             try {
                 SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("settings", Context.MODE_PRIVATE);
                 ConnectionFactory factory = new ConnectionFactory();
@@ -245,11 +246,11 @@ public class MainActivity extends AppCompatActivity {
 
                 String queueName = sharedPref.getString("queueName", "");
 
-                if (queueName.equals("")) {
+                if (queueName!=null && queueName.equals("")) {
                     queueName = channel.queueDeclare(queueName,true,false,false,null).getQueue();
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("queueName", queueName);
-                    editor.commit();
+                    editor.apply();
                 }
 
                 channel.queueBind(queueName, "iot/rooms", "");
@@ -270,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
             }catch (Exception e){
                 e.printStackTrace();
             }
-            return new Object();
+            return "";
         }
     }
 }

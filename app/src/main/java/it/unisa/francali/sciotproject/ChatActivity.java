@@ -23,7 +23,6 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
@@ -37,7 +36,8 @@ public class ChatActivity extends AppCompatActivity {
     private TextView conversationTextView;
     private Handler incomingMessageHandler;
     private SharedPreferences sharedPref;
-    Channel channel;
+    private Channel channel;
+
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,14 +50,19 @@ public class ChatActivity extends AppCompatActivity {
         incomingMessageHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
-                String receivedMsg = msg.getData().get("msg").toString();
+                String receivedMsg = msg.getData().getString("msg");
+
                 Log.d("received message", receivedMsg);
                 Date now = new Date();
                 SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss", Locale.ITALIAN);
                 conversationTextView.append(ft.format(now) + ' ' + receivedMsg + '\n');
             }
         };
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
         new ReceiveMsgTask().execute();
     }
 
@@ -73,23 +78,24 @@ public class ChatActivity extends AppCompatActivity {
         sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("chatHistory", conversationTextView.getText().toString());
-        editor.commit();
+        editor.apply();
+        closeRabbitMQChannel();
+    }
 
-
-        new AsyncTask() {
+    @SuppressLint("StaticFieldLeak")
+    void closeRabbitMQChannel(){
+        new AsyncTask<Object, Void, String>() {
             @Override
-            protected Object doInBackground(Object[] objects) {
+            protected String doInBackground(Object[] objects) {
                 try {
                     channel.abort();
                 }catch(IOException e){
                     e.printStackTrace();
                 }
-                return new Object();
+                return null;
             }
         }.execute();
     }
-
-
 
 
     void initializeLayoutElements(){
@@ -149,9 +155,10 @@ public class ChatActivity extends AppCompatActivity {
     }
 
 
-    private class ReceiveMsgTask extends AsyncTask {
+    @SuppressLint("StaticFieldLeak")
+    private class ReceiveMsgTask extends AsyncTask<Object, Void, String> {
         @Override
-        protected Object doInBackground(Object[] objects) {
+        protected String doInBackground(Object[] params) {
             try {
                 sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
                 ConnectionFactory factory = new ConnectionFactory();
@@ -169,7 +176,7 @@ public class ChatActivity extends AppCompatActivity {
                     queueName = channel.queueDeclare("", true, false, false, null).getQueue();
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString("queueChatName", queueName);
-                    editor.commit();
+                    editor.apply();
                 }
 
                 channel.queueBind(queueName, "iot/chat", "");
@@ -191,7 +198,7 @@ public class ChatActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            return new Object();
+            return "";
         }
     }
 }
