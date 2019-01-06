@@ -2,7 +2,7 @@
 
 This project has been developed as final project for our university exam of Serverless Computing for IoT. 
 The project was born from the idea of giving to computer science students of our university the possibility to monitor study rooms informations in real time by using an android app with a simple interface. 
-The project is based on two main modules: seats book/release and chat. Users can see current seats in tree study rooms, can talk on a dedicated chat. 
+The project is based on two main modules: seats book/release and chat. Users can see current seats in three study rooms, can talk on a dedicated chat. 
 
 ## Getting Started
 
