@@ -36,7 +36,7 @@ Install android app on smartphone via Android Studio
 
 ## Authors
 
-**Francesco Califano** 
-**Pietro Russo**
+-**Francesco Califano** 
+-**Pietro Russo**
 
 See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
