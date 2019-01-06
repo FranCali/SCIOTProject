@@ -1,0 +1,19 @@
+apiVersion: "nuclio.io/v1"
+kind: Function
+metadata:
+  name: seatproducer
+  namespace: nuclio
+spec:
+  handler: "main:handler"
+  description: "Function that send a message on an AMQP queue."
+  runtime: nodejs
+  image: "nuclio/processor-seatproducer:latest"
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPU: 75
+  build:
+    functionSourceCode: dmFyIGFtcXAgPSByZXF1aXJlKCdhbXFwbGliJyk7CgpleHBvcnRzLmhhbmRsZXIgPSBmdW5jdGlvbihjb250ZXh0LCBldmVudCkgewogICAgdmFyIHJlcXVlc3QgPSBKU09OLnBhcnNlKGV2ZW50LmJvZHkpOwogICAgdmFyIGtleSA9ICJyb29tcyI7CiAgICB2YXIgbWVzc2FnZSA9IHJlcXVlc3Qucm9vbU51bWJlcisiLSIrcmVxdWVzdC5pc1NpdHRpbmc7CgogICAgYW1xcC5jb25uZWN0KCdhbXFwOi8vZ3Vlc3Q6Z3Vlc3RAMTAuMC4yLjE1OjU2NzInKS50aGVuKGZ1bmN0aW9uKGNvbm4pIHsKICAgIHJldHVybiBjb25uLmNyZWF0ZUNoYW5uZWwoKS50aGVuKGZ1bmN0aW9uKGNoKSB7CiAgICAgICAgdmFyIGV4ID0gJ2lvdC9yb29tcyc7CiAgICAgICAgdmFyIG9rID0gY2guYXNzZXJ0RXhjaGFuZ2UoZXgsICd0b3BpYycsIHtkdXJhYmxlOiBmYWxzZX0pOwogICAgICAgIHJldHVybiBvay50aGVuKGZ1bmN0aW9uKCkgewogICAgICAgICAgICBjaC5wdWJsaXNoKGV4LCBrZXksIEJ1ZmZlci5mcm9tKG1lc3NhZ2UpKTsKICAgICAgICAgICAgLy9jb25zb2xlLmxvZygiIFt4XSBTZW50ICVzOiclcyciLCBrZXksIG1lc3NhZ2UpOwogICAgICAgICAgICByZXR1cm4gY2guY2xvc2UoKTsKICAgICAgICB9KTsKICAgIH0pLmZpbmFsbHkoZnVuY3Rpb24oKSB7IGNvbm4uY2xvc2UoKTsgIH0pCiAgICB9KS5jYXRjaChjb25zb2xlLmxvZyk7CiAgICAKICAgIGNvbnRleHQuY2FsbGJhY2sobWVzc2FnZSk7Cn07
+    commands:
+      - 'npm install amqplib'
+    codeEntryType: sourceCode
+  platform: {}

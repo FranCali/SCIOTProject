@@ -1,0 +1,19 @@
+apiVersion: "nuclio.io/v1"
+kind: Function
+metadata:
+  name: chatproducer
+  namespace: nuclio
+spec:
+  handler: "main:handler"
+  description: "Function that send a message on an AMQP queue."
+  runtime: nodejs
+  image: "nuclio/processor-chatproducer:latest"
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPU: 75
+  build:
+    functionSourceCode: dmFyIGFtcXAgPSByZXF1aXJlKCdhbXFwbGliJyk7CgpleHBvcnRzLmhhbmRsZXIgPSBmdW5jdGlvbihjb250ZXh0LCBldmVudCkgewogICAgdmFyIHJlcXVlc3QgPSBKU09OLnBhcnNlKGV2ZW50LmJvZHkpOwogICAgCiAgICB2YXIgbWVzc2FnZSA9IHJlcXVlc3QubXNnOwoKICAgIGFtcXAuY29ubmVjdCgnYW1xcDovL2d1ZXN0Omd1ZXN0QDEwLjAuMi4xNTo1NjcyJykudGhlbihmdW5jdGlvbihjb25uKSB7CiAgICByZXR1cm4gY29ubi5jcmVhdGVDaGFubmVsKCkudGhlbihmdW5jdGlvbihjaCkgewogICAgICAgIHZhciBleCA9ICdpb3QvY2hhdCc7CiAgICAgICAgdmFyIG9rID0gY2guYXNzZXJ0RXhjaGFuZ2UoZXgsICdmYW5vdXQnLCB7ZHVyYWJsZTogZmFsc2V9KTsKICAgICAgICByZXR1cm4gb2sudGhlbihmdW5jdGlvbigpIHsKICAgICAgICAgICAgY2gucHVibGlzaChleCwgJycsIEJ1ZmZlci5mcm9tKG1lc3NhZ2UudG9TdHJpbmcoKSkpOwogICAgICAgICAgICByZXR1cm4gY2guY2xvc2UoKTsKICAgICAgICB9KTsKICAgIH0pLmZpbmFsbHkoZnVuY3Rpb24oKSB7IGNvbm4uY2xvc2UoKTsgIH0pCiAgICB9KS5jYXRjaChjb25zb2xlLmxvZyk7CiAgICAKICAgIGNvbnRleHQuY2FsbGJhY2sobWVzc2FnZS50b1N0cmluZygpKTsKfTsK
+    commands:
+      - 'npm install amqplib'
+    codeEntryType: sourceCode
+  platform: {}

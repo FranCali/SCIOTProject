@@ -30,7 +30,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class ChatActivity extends AppCompatActivity {
-    final String NUCLIO_HOST = "192.168.1.7", NUCLIO_PORT_NUMBER = "41165";
+    final String NUCLIO_HOST = "192.168.43.173", NUCLIO_PORT_NUMBER = "41165";
     private Button publishBtn;
     private EditText text;
     private TextView conversationTextView;
@@ -55,7 +55,8 @@ public class ChatActivity extends AppCompatActivity {
                 Log.d("received message", receivedMsg);
                 Date now = new Date();
                 SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss", Locale.ITALIAN);
-                conversationTextView.append(ft.format(now) + ' ' + receivedMsg + '\n');
+                String chatMessage = ft.format(now) + ' ' + receivedMsg + '\n';
+                conversationTextView.append(chatMessage);
             }
         };
     }
@@ -66,12 +67,6 @@ public class ChatActivity extends AppCompatActivity {
         new ReceiveMsgTask().execute();
     }
 
-    private void recoverChatHistory(){
-        sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
-        String chatHistory = sharedPref.getString("chatHistory", "");
-        conversationTextView.setText(chatHistory);
-    }
-
     @Override
     public void onStop(){
         super.onStop();
@@ -80,6 +75,12 @@ public class ChatActivity extends AppCompatActivity {
         editor.putString("chatHistory", conversationTextView.getText().toString());
         editor.apply();
         closeRabbitMQChannel();
+    }
+
+    private void recoverChatHistory(){
+        sharedPref = getApplicationContext().getSharedPreferences("state", Context.MODE_PRIVATE);
+        String chatHistory = sharedPref.getString("chatHistory", "");
+        conversationTextView.setText(chatHistory.trim()+'\n');
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -96,7 +97,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         }.execute();
     }
-
 
     void initializeLayoutElements(){
         publishBtn = findViewById(R.id.publishBtn);
@@ -154,7 +154,6 @@ public class ChatActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
-
     @SuppressLint("StaticFieldLeak")
     private class ReceiveMsgTask extends AsyncTask<Object, Void, String> {
         @Override
@@ -172,11 +171,13 @@ public class ChatActivity extends AppCompatActivity {
 
                 String queueName = sharedPref.getString("queueChatName", "");
 
-                if (queueName.equals("")) {
-                    queueName = channel.queueDeclare("", true, false, false, null).getQueue();
-                    SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.putString("queueChatName", queueName);
-                    editor.apply();
+                if(queueName!=null) {
+                    if (queueName.equals("")) {
+                        queueName = channel.queueDeclare("", true, false, false, null).getQueue();
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.putString("queueChatName", queueName);
+                        editor.apply();
+                    }
                 }
 
                 channel.queueBind(queueName, "iot/chat", "");
