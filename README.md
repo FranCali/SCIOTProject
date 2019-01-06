@@ -35,8 +35,7 @@ $ sudo docker run -p 9000:15672  -p 1883:1883 -p 5672:5672  cyrilix/rabbitmq-mqt
 Install android app on smartphone via Android Studio
 
 ## Authors
-
--**Francesco Califano** 
--**Pietro Russo**
+-Francesco Califano
+-Pietro Russo
 
 See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
